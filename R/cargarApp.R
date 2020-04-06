@@ -11,5 +11,5 @@ cargarApp <- function(){
     }
     
     # Ejecutar la app
-    shiny::runApp(appDir, launch.browser = TRUE)
+    shiny::runApp(appDir, display.mode = "normal")
 }
