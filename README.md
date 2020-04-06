@@ -50,7 +50,7 @@ library("RXapp")
 cargarApp()
 ```
 
-Con esto debiera abrirse una ventana en el navegador predeterminado.
+Con esto debiera abrirse una ventana de RStudio.
 
 ## Utilizar la App
 
@@ -67,9 +67,42 @@ Cuando se haya seleccionado el directorio hay que cargarlo, si no existiera el a
 
 La aplicación luce así en el navegador.
 
+![](https://raw.githubusercontent.com/olitroski/RXapp/master/app.png)
 
 
 
+* **A la izquierda**:  Se selecciona el sujeto y sus respectivas imagenes
+* Una vez decidido el resultado para el sujeto se debe apretar el botón **SetRX**
+
+El sistema permite una secuencia muy específica para determinar un sujeto, otras combinaciones arrojan un error en un aviso.
+
+
+
+#### Si no sirve para el estudio
+
+* **Sujeto sirve para estudio**: `No sirve`
+* **Determinar RX que sirve**: `No sirve`
+* **Determinar etiqueta**: `No asignada`
+
+
+
+#### Si es útil para el estudio
+
+* **Sujeto sirve para estudio**: `Sirve`
+* **Determinar RX que sirve**: `RX definitivo`
+* **Determinar etiqueta**: `Estable` o `Inestable` según corresponda
+
+
+
+Al guardar el registro se guardará el nombre del archivo, por lo cual **no se debe olvidar**:
+
+> **Siempre tener seleccionado el RX definitivo antes de guardar.**
+
+
+
+### 3. Cerrar la aplicación
+
+Simplemente cerrar la ventana
 
 
 
