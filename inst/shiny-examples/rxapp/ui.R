@@ -26,19 +26,38 @@ ui <- navbarPage(
         ),
         hr(),
 
-        verbatimTextOutput("test", placeholder = TRUE),
+        # verbatimTextOutput("test", placeholder = TRUE),
 
         # | --- Mostrar el data.frame con opciones de filtrado ------
         fluidRow(
-            column(12,
+            column(7, offset = 1,
                 tableOutput("rxTable")
+            ),
+            column(4,
+                # Seleccion de filtro
+                h4("Filtrar según Status"),
+                uiOutput("tablaRecuento"),
+                br(),
+
+                # Tabla de recuentos
+                h4("Recuentos"),
+                tableOutput("tableDir"),
+                br(),
+
+                # Conteo de Rut
+                h4("Recuento Sujetos"),
+                textOutput("nsujeto"),
+                br(),
+
+                # Resetear Rut
+                h4("Resetear un Rut"),
+                textInput("textrut", label = NULL, width = 200, placeholder = "Rut sin espacios"),
+                # uiOutput("resetRut"),
+                actionButton("resetButton", label ="Reset Rut", icon = icon("warning"))
             )
         )
 
     ),
-
-
-
 
 
 
@@ -48,54 +67,69 @@ ui <- navbarPage(
         # Pagina única no más
         fluidRow(
             # | Sidebar ----
-            column(3,
+            column(1,
                 # | -- Sujetos a editar ----
-                h4("Listado de Directorios"),
-                p("Solo se muestran los no analizados"),
-                div(style = "overflow-y: scroll; height: 350px",
-                    uiOutput("listaFolders")
-                ),
-                # | -- Files a editar -----
-                h4("Listado de Rx"),
-                div(style = "overflow-y: scroll; height: 350px",
-                    uiOutput("listaRX")
-                )
+                h4("Rut"),
+                p("No analizados"),
+                # hr(),
+                # div(style = "overflow-y: scroll; height: 450px",
+                #     uiOutput("listaRut")
+                # )
+                uiOutput("listaRut")
+            ),
 
+            column(2,
+                # | -- Referencia -----
+                h4("Referencia"),
+                # p("Set de RX de una fecha y hora determinada"),
+                uiOutput("referencia"),
+                hr(),
+
+                # | -- Serie -----
+                h4("Serie"),
+                # p("Agrupación de RX"),
+                uiOutput("series"),
+                hr(),
+
+                # | -- RX -------
+                h4("Imagen"),
+                uiOutput("rayos")
             ),
 
             # | Main ----
+            verbatimTextOutput("test", placeholder = TRUE),
+
             column(9,
                 fluidRow(
-                    # Sujeto sirve
-                    column(4,
-                        h4("Sujeto sirve para el estudio"),
-                        radioButtons("sirveSubj", label = NULL, choices = c("Sirve", "No sirve", "Determinar"),
-                                     inline = TRUE, selected = "Determinar")
+                    # Chao sujeto
+                    column(3,
+                        h4("Descartar Sujeto"),
+                        p("Descartar todas las imágenes del suejto"),
+                        actionButton("chaoRUT", label = "Filtrar Rut", icon = icon("filter"))
                     ),
-                    # Rx sirve
-                    column(4,
-                        h4("Determinar RX que sirve"),
-                        radioButtons("sirveRX", label = NULL, choices = c("RX definitivo", "No sirve"),
-                                     inline = TRUE, selected = "No sirve")
+                    # Chao Referencia
+                    column(3,
+                        h4("Descartar Referencia"),
+                        p("Descartar todas las series de la referencia"),
+                        actionButton("chaoREF", label = "Filtrar Ref.", icon = icon("filter"))
                     ),
-                    # Etiqueta
-                    column(4,
-                        h4("Determinar etiqueta"),
-                        radioButtons("sirveTag", label = NULL, choices = c("Estable", "Inestable", "No Asignada"),
-                                     inline = TRUE, selected = "No Asignada")
+                    # Chao Referencia
+                    column(3,
+                           h4("Descartar Serie"),
+                           p("Descartar todas las imágenes de la serie"),
+                           actionButton("chaoSERIE", label = "Filtrar Serie", icon = icon("filter"))
+                    ),
+
+                    # Elegir RX
+                    column(3,
+                        h4("The Choosen One"),
+                        p("El RX elegido será incluido en el estudio"),
+                        radioButtons("sirveRX", label = NULL, choices = c("Estable", "Inestable", "Elegir"), inline = TRUE, selected = "Elegir"),
+                        actionButton("chooseRX", label = "Confirmar", icon = icon("check"))
                     )
                 ),
                 hr(),
 
-                # | -- Tomar la desicion ----
-                fluidRow(
-                    column(8,
-                        verbatimTextOutput("rxFile", placeholder = TRUE),
-                    ),
-                    column(4,
-                        actionButton("rxDesicion", label = "Set RX", icon = icon ("warning"), width = "130px")
-                    )
-                ),
 
                 # | -- La foto -----
                 fluidRow(
@@ -105,17 +139,19 @@ ui <- navbarPage(
                 )
             )
         )
-    ),
-
-
-    # | Tab. Etiquetados --------------
-    tabPanel("RX Etiquetados",
-        fluidRow(
-            column(12,
-                # verbatimTextOutput("test"),
-                h4("RX ya etiquetados"),
-                tableOutput("rxlistos")
-            )
-        )
     )
+    #
+    # ,
+    #
+    # # | ------
+    # # | Tab. Etiquetados --------------
+    # tabPanel("RX Etiquetados",
+    #     fluidRow(
+    #         column(12,
+    #             # verbatimTextOutput("test"),
+    #             h4("RX ya etiquetados"),
+    #             tableOutput("rxlistos")
+    #         )
+    #     )
+    # )
 )

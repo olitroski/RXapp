@@ -17,5 +17,7 @@ Carga el folde de RX y crea un archivo RDS con todos los datos, si no existe lo 
 }
 \examples{
 # library(stringr); library(dplyr)
+# rxdir <- "C:/Users/olitr/Desktop/Nueva carpeta"
+# rxdir <- "D:/OneDrive/BarbiApp/AppShiny/testFolder"
 # test <- cargaRDS("D:/OneDrive/BarbiApp/AppShiny/testFolder")
 }

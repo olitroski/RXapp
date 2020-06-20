@@ -47,7 +47,7 @@ Para ejecutar es abrir un RStudio y escribir.
 library("RXapp")
 
 # Ejecutar App
-cargarApp()
+RXapp()
 ```
 
 Con esto debiera abrirse una ventana de RStudio.
@@ -56,49 +56,11 @@ Con esto debiera abrirse una ventana de RStudio.
 
 ### 1. Seleccionar un directorio
 
-Debe ser el directorio donde están las carpetas para cada sujeto, con el fin de preservar los datos intactos se requiere que no se toquen esos folders, no va a cargar si:
-
-- Hay archivos adicionales a las imágenes en un folder
-- Hay directorios sin imágenes
-
-Cuando se haya seleccionado el directorio hay que cargarlo, si no existiera el archivo **Excel** donde se guardan las etiquetas avisará que creará uno nuevo, si ya existe de previos trabajos se carga automático.
+El directorio de trabajo solo debe tener las imágenes de RX, la app solo carga archivos con este específico estructura de nombre de archivo y para no contaminar la carpeta lo mejor es ni tocarla.
 
 ### 2. Etiquetar sujetos
 
-La aplicación luce así en el navegador.
-
-![](https://raw.githubusercontent.com/olitroski/RXapp/master/app.png)
-
-
-
-* **A la izquierda**:  Se selecciona el sujeto y sus respectivas imagenes
-* Una vez decidido el resultado para el sujeto se debe apretar el botón **SetRX**
-
-El sistema permite una secuencia muy específica para determinar un sujeto, otras combinaciones arrojan un error en un aviso.
-
-
-
-#### Si no sirve para el estudio
-
-* **Sujeto sirve para estudio**: `No sirve`
-* **Determinar RX que sirve**: `No sirve`
-* **Determinar etiqueta**: `No asignada`
-
-
-
-#### Si es útil para el estudio
-
-* **Sujeto sirve para estudio**: `Sirve`
-* **Determinar RX que sirve**: `RX definitivo`
-* **Determinar etiqueta**: `Estable` o `Inestable` según corresponda
-
-
-
-Al guardar el registro se guardará el nombre del archivo, por lo cual **no se debe olvidar**:
-
-> **Siempre tener seleccionado el RX definitivo antes de guardar.**
-
-
+Es muy simple, se selecciona el Rut y se va descartando de a poco según se vaya viendo.
 
 ### 3. Cerrar la aplicación
 

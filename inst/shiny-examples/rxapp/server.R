@@ -7,11 +7,10 @@ server <- function(input, output, session){
 
 
     # | PANEL 1: Seleccionar carpeta --------------------------------------------
-    # | -- ChooseFolder, Path y Dir ----
-    path <- reactiveValues()
 
-    # ---- Checar exista savedir ---- #   y cargar el set
+    # | ---- Cargar savedir ----
     # El savedir se guarda en un archivo en el user folder de windows
+    path <- reactiveValues()
     savedir_path <- file.path(Sys.getenv("USERPROFILE"), "savedir")
 
     # Si no existe lo crea
@@ -25,7 +24,13 @@ server <- function(input, output, session){
         setwd(readLines(savedir_path))
     }
 
-    # ---- Boton choose dir ---- #     <<<< path$ruta >>>>
+    # Mostrar Path
+    output$pathText <- renderPrint({
+        setwd(path$ruta)
+        cat(getwd())
+    })
+
+    # | ---- Cambiar de savedir ----
     observeEvent(input$pathBoton, {
         # Elije
         ruta <- choose.dir()
@@ -43,453 +48,361 @@ server <- function(input, output, session){
 
     })
 
-    # Mostrar Path
-    output$pathText <- renderPrint({
-        setwd(path$ruta)
-        cat(getwd())
-    })
-
-    # En reactivo por si cambia
+    # Directorio de trabajo final
     rxdir <- reactive({path$ruta})
 
-    # Cargar el directorio al reactivo
-    rxdata <- reactive({
-        cargaRDS(rxdir())
+
+    # | ---- Cargar RDS Poll ----
+    # Primero ejecutará este
+    rx.get <- function(){
+        datos <- cargaRDS(rxdir())
+        datos <- arrange(datos, rut, refNum, serie, rx)
+        datos
+    }
+
+    # Chequea el mtime
+    rx.check <- function(){
+        if (file.exists(file.path(rxdir(), "rxData.RDS")) == TRUE){
+            modificado <- file.path(rxdir(), "rxData.RDS")
+            modificado <- base::file.info(modificado)
+            modificado <- modificado$mtime
+            return(modificado)
+        } else {
+            cat("No carga el mtime, crea file nuevo\n")
+        }
+    }
+
+    # El poll
+    rxdata <- reactivePoll(2000, session, checkFunc = rx.check, valueFunc = rx.get)
+
+
+    # | ---- Fitrado de etiqueta -----
+    output$tablaRecuento <- renderUI({
+        lab <- req(rxdata())
+        lab <- unique(lab$"etiqueta")
+        lab <- c(lab, "Todo")
+        radioButtons("filterDir", label = NULL, choices = req(lab), selected = "Todo")
+    })
+
+    # | ---- Tabla de recuentos
+    output$tableDir <- renderTable({
+        # si todo
+        tabla <- otable("etiqueta", data = req(rxdata()))
+        tabla <- mutate(tabla, pct = round(pct*100, 1))
+        tabla <- mutate(tabla, pct = paste0(pct, "%"))
+        names(tabla) <- c("Etiqueta", "Conteo", "Porcentaje")
+        tabla
+    })
+
+    # | ---- Data.frame ----
+    output$rxTable <- renderTable({
+        if (req(input$filterDir) == "Todo"){
+            req(rxdata())
+        } else {
+            filter(req(rxdata()), etiqueta == input$filterDir)
+        }
+    }, digits = 0)
+
+
+    # Mostar N sujetos
+    output$nsujeto <- renderText({
+        (length(unique(rxdata()$rut)))
     })
 
 
-    # Cargar en la pagina el data frame ----------------------------------------------
-    output$rxTable <- renderDataTable({
-        rxdata()
-    })
-
-
-
-
-    output$test <- renderPrint({
-        rxdir()
-    })
-
-
-
-
-
-
-
-    wd <- reactiveValues(chooseFolder = "Ingresar directorio")
-    # observe({
-    #     if (input$folderBtn > 0){
-    #         wd$chooseFolder <- choose.dir(caption = "Seleccionar carpeta de sujetos")
-    #     }
+    # | ---- Resetear Rut ------
+    # output$resetRut <- renderUI({
+    #     rutlist <- req(rxdata())
+    #     rutlist <- unique(rutlist$rut)
+    #     selectInput("fixRut", choices = req(rutlist), width = 200, label = NULL)
+    #
     # })
 
-    # | -- Mostrar path
-    output$folderDir <- renderPrint({
-        if (is.na(wd$chooseFolder)){
-            cat("Ingresar directorio")
-        } else {
-            cat(wd$chooseFolder)
-        }
-    })
 
-    # | -- Mostrar contenido
-    output$folderShow <- renderPrint({
-        # No hay
-        if (wd$chooseFolder == "Ingresar directorio" | is.na(wd$chooseFolder)){
-            "Ingresar directorio"
-
-        # es NA
-        } else {
-            dir(wd$chooseFolder)
-        }
-    })
-
-    # | -- Reactive con chequeos ----
-    okfolder <- reactive({
-        if (wd$chooseFolder == "Ingresar directorio"){
-            "Ingresar directorio"
-        } else {
-            # Determinar si hay fotos JPG
-            archivos <- dir(wd$chooseFolder)
-            archivos <- archivos[dir.exists(file.path(wd$chooseFolder, archivos))]
-            archivos <- file.path(wd$chooseFolder, archivos)
-
-            # Revisar todos los folders
-            rxs <- lapply(archivos, dir)
-
-            nfile <- lapply(rxs, length)
-            nfile <- as.numeric(paste(nfile))
-
-            njpg <- lapply(rxs, function(x) length(grep(".jpg", x)))
-            njpg <- as.numeric(paste(njpg))
-
-            # Hay folders sin jpgs
-            if (sum(njpg == 0) > 0){
-                sinjpg <- archivos[njpg == 0]
-                for (f in sinjpg){
-                    cat("Sin RX: ", f, "\n")
-                }
-                jpg <- FALSE
-            } else {
-                jpg <- TRUE
-            }
-
-            # Folders con nfiles difernte njpg
-            if (sum(!(nfile == njpg)) > 0){
-                difn <- archivos[!(nfile == njpg)]
-                for (f in difn){
-                    cat("nfile.dif.njpg: ", f, "\n")
-                }
-                n <- FALSE
-            } else {
-                n <- TRUE
-            }
-
-            # Determinar que hay excel
-            xls <- file.exists(file.path(wd$chooseFolder, "rx_status.xlsx"))
-
-            # Fabricar la lista de comprobación
-            list(jpg = jpg, xls = xls, n = n)
-        }
-    })
-
-
-    # | -- Ventana de confirmacion ------
-    # Configuración ventanita
-    cargarModal <- function(){
-        if (okfolder()$xls == FALSE){
-            show <- "El Excel de registros no existe, se va a crear uno nuevo"
-        } else {
-            show <- "El Excel de registros existe, comenzar a editar"
-        }
-
+    # | ---- Acciones Resetear -----
+    resetModal <- function(){
+        # El modal
         modalDialog(
-            title = "Cargar directorio seleccionado",
+            title = "Confirmar Resetear Rut",
             size = "m",
             easyClose = TRUE,
-            # Mensaje
-            div(span(show)),
+
+            # El mensaje
+            div(p("Va a resetear las etiquetas del RUT: ", input$textrut)),
+
             footer = tagList(
                 modalButton("Cancelar"),
-                actionButton("cargarOK", "Confirmar")
+                actionButton("okReset", "Resetear")
             )
         )
     }
 
-    # Mostrar ventanita
-    observeEvent(input$folderLoad, {
-        if (wd$chooseFolder == "Ingresar directorio"){
-            showNotification("Ingresar directorio", closeButton = FALSE, type = "warning")
-
-        } else {
-            # Si jpg falso
-            if (okfolder()$jpg == FALSE){
-                showNotification("Directorios sin imagenes, revisar consola ",
-                                 closeButton = FALSE, type = "error", duration = 8)
-
-            # Diferencias en archivos
-            } else if (okfolder()$n == FALSE) {
-                showNotification("Directorios con archivos extra, revisar consola ",
-                                 closeButton = TRUE, type = "error", duration = 30)
-
-            # Si hay excel
-            } else if (okfolder()$xls == TRUE){
-                updateNavbarPage(session, inputId = "TablasApp", selected = "Etiquetar RX")
-
-            # Si no hay excel
-            } else {
-                showModal(cargarModal())
-            }
-        }
+    # Mostrar
+    observeEvent(input$resetButton,{
+        showModal(resetModal())
     })
 
-    # Cargar
-    observeEvent(input$cargarOK, {
-        if (okfolder()$xls == FALSE){
-            # Folders
-            archivos <- dir(wd$chooseFolder)
-            archivos <- archivos[dir.exists(file.path(wd$chooseFolder, archivos))]
-            folderData <- data.frame(folder = archivos, stringsAsFactors = FALSE)
-            # folderData <- mutate(folderData, sirveSubj = as.character(NA),
-            #                      rxFile = as.character(NA), tagLesion = as.character(NA))
-            folderData <- mutate(folderData, sirveSubj = "", rxFile = "", tagLesion = "")
+    # Acciones
+    observeEvent(input$okReset, {
+        rut <- str_trim(input$textrut)
+        datos <- rxdata()
 
-            # Hacer el excel
-            excel <- createWorkbook()
-            addWorksheet(excel, "Sujetos")
-            writeData(excel, "Sujetos", folderData)
-            saveWorkbook(excel, file.path(wd$chooseFolder, "rx_status.xlsx"), overwrite = TRUE)
-
-            # Para la siguiente pestaña
-            updateNavbarPage(session, inputId = "TablasApp", selected = "Etiquetar RX")
-            removeModal()
-        } else {
-            # Para la siguiente pestaña
-            updateNavbarPage(session, inputId = "TablasApp", selected = "Etiquetar RX")
-            removeModal()
-        }
+        datos[datos$rut == rut, "etiqueta"] <- "No procesado"
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
     })
 
-
-    # | -----
-    # | -- Reactive POLL para el Excel -------------------------------------
-    # Funcion leer fecha de modificacion
-    xlsx.check <- function(){
-        # Hay directorio
-        if (dir.exists(wd$chooseFolder)){
-            fichero <- file.path(wd$chooseFolder, "rx_status.xlsx")
-            if (file.exists(fichero)){
-                info <- base::file.info(fichero)
-                info <- info$mtime
-                return(info)
-            } else {
-                return("xls0")
-            }
-
-        # Se cerro el dialogo
-        } else if (is.na(wd$chooseFolder) | wd$chooseFolder == "Ingresar directorio") {
-            return("xls0")
-        }
-
-
-        # if (wd$chooseFolder != "Ingresar directorio"){
-        #     fichero <- file.path(wd$chooseFolder, "rx_status.xlsx")
-        #     if (file.exists(fichero)){
-        #         info <- base::file.info(fichero)
-        #         info <- info$mtime
-        #         return(info)
-        #     } else {
-        #         return("ola k ase 1")
-        #     }
-        # } else {
-        #     return("ola k ase 2")
-        # }
-    }
-
-    # Funcion get si es que cambia
-    xlsx.get <- function(){
-        # Por si no hay nada seleccionado
-        if (wd$chooseFolder != "Ingresar directorio"){
-            fichero <- file.path(wd$chooseFolder, "rx_status.xlsx")
-            if (file.exists(fichero)){
-                return(read.xlsx(fichero))
-            }
-        } else {
-            "Ingresar directorio"
-        }
-    }
-
-    # EL poll
-    xlsxRX <- reactivePoll(250, session, checkFunc = xlsx.check, valueFunc = xlsx.get)
+    # <<<<<<<<<<<<< test >>>>>>>>>>>>>>>>>>
+    # output$test <- renderPrint({
+    # })
 
 
     # | ----
     # | PANEL 2: Seleccion de los RX -------------------------------------------------
-    # Listado de folders sin edicion
-    ch <- reactive({
-        # Hay diractorio pero no sirve
-        if (is.null(xlsxRX())){
-            ch <- length(logical(0))
-            ch
-
-        # Directorio y sirve
-        } else  {
-            # capturar la data
-            folderData <- xlsxRX()
-            folderData <- mutate(folderData, sub = ifelse(sirveSubj == "", 1, 0),
-                                 rxf = ifelse(rxFile == "",1 , 0),
-                                 tag = ifelse(tagLesion == "", 1, 0))
-            folderData <- mutate(folderData, status = sub + rxf + tag)
-            folderData <- filter(folderData, status == 3)
-            ch <- folderData$folder
-            ch
-        }
-    })
-
-
-    # | -- Lista de directorios -----
-    output$listaFolders <- renderUI({
+    # | -- Lista de RUT -----
+    output$listaRut <- renderUI({
         # Si no hay folder
-        if (wd$chooseFolder == "Ingresar directorio" | is.na(wd$chooseFolder)){
-            textInput("nara1", label = NULL, value = "No hay directorio")
-
-        # Si hubiera un problema de ficheros njpg
-        } else if (okfolder()$jpg == FALSE){
-            textInput("nara4", label = NULL, value = "Directorios sin imagenes")
-
-        # Por si no quedan archivos
-        } else if (length(ch()) == 0){
-            textInput("nara3", label = NULL, value = "Todos los RX procesados")
-
-        # No se ha cargado el xlsx
-        } else if (length(ch()) == 1) {
-            if (ch() == 0){
-                textInput("nara1", label = NULL, value = "Cargar directorio")
-            } else {
-                textInput("nara1", label = NULL, value = "Directorio solo tiene 1 folder")
-            }
-
+        if (nrow(rxdata()) > 1){
+            rut <- filter(rxdata(), etiqueta == "No procesado")
+            rut <- unique(rut$rut)
+            radioButtons("listaRut.input", label = NULL, choices = req(rut))
         # Widget
         } else {
-            radioButtons("listaFolders.input", label = NULL, choices = ch())
+            HTML("<p>No hay sujeto para cargar</p>")
         }
     })
 
-
-    # | -- Lista de RX -----
-    output$listaRX <- renderUI({
-        if (wd$chooseFolder == "Ingresar directorio" | is.na(wd$chooseFolder)){
-            textInput("nara2", label = NULL, value = "No hay directorio")
-
-        # Si nos gastamos todo
-        } else if (length(ch()) == 0){
-            textInput("nara31", label = NULL, value = "Todos los RX procesados")
-
+    # | -- Lista de referencias -----
+    output$referencia <- renderUI({
+        validate(need(input$listaRut.input, "Esperando input!"))
+        # Si no hay folder
+        if (nrow(rxdata()) > 1){
+            reflist <- filter(rxdata(), rut == req(input$listaRut.input), etiqueta == "No procesado")
+            reflist <- unique(reflist$refNum)
+            radioButtons("listaRef.input", label = NULL, choices = req(reflist))
+        # Widget
         } else {
-            # Esperar
-            validate(need(input$listaFolders.input, "Esperando selección..."))
-            # Cargar directorio
-            archivos <- dir(file.path(wd$chooseFolder, input$listaFolders.input))
-            radioButtons("listRX.input", label = NULL, choices = archivos)
+            HTML("<p>No hay referencias para cargar</p>")
         }
     })
 
+    # | -- Lista de series -------
+    output$series <- renderUI({
+        # Si no hay folder
+        validate(need(input$listaRut.input, "Esperando input!"))
+        validate(need(input$listaRef.input, "Esperando input!"))
 
-    # | Seccion de edición -----------------------------------------------------
-    # | -- Mostar modal ----
-    observeEvent(input$rxDesicion, {
-        if (wd$chooseFolder == "Ingresar directorio"){
-            # Que hay directoirio
-            showNotification("No hay directorio", closeButton = FALSE, type = "error")
-        } else {
-            # Condiciones válidas
-            if (input$sirveSubj == "Sirve" & input$sirveRX == "RX definitivo" & input$sirveTag != "No Asignada"){
-                showModal(modalSetRX())
+        if (nrow(rxdata()) > 1){
+            serie <- filter(rxdata(), rut == req(input$listaRut.input))
+            serie <- filter(serie, refNum == req(input$listaRef.input), etiqueta == "No procesado")
+            serie <- serie[["serie"]]
+            serie <- unique(serie)
 
-            # Condiciones de dropear sujeto
-            } else if (input$sirveSubj == "No sirve" & input$sirveRX == "No sirve" & input$sirveTag == "No Asignada"){
-                showModal(modalDropRX())
-
-            # Condiciones mal cofiguradas
+            if (length(serie) == 0){
+                HTML("<p>No hay series para cargar</p>")
             } else {
-                showNotification("Configuración de valores inválida", closeButton = FALSE, type = "error")
+                # radioButtons("listaSerie.input", label = NULL, choices = c("Todo", serie), selected = "Todo")
+                radioButtons("listaSerie.input", label = NULL, choices = req(serie))
             }
-        }
-    })
 
-
-    # | -- Sirve Modal -----
-    modalSetRX <- function(){
-        modalDialog(
-            title = "Confirmar registro de RX",
-            size = "m",
-            easyClose = TRUE,
-
-            # Mensaje
-            div(span(p(strong("Archivo: "), code(input$listRX.input))),
-                span(p(strong("Sujeto: "),   code(input$sirveSubj))),
-                span(p(strong("Imagen: "),   code(input$sirveRX))),
-                span(p(strong("Etiqueta: "), code(input$sirveTag))),
-                span(p("Los 3 valores se guardarán en el Excel de edición"))
-            ),
-
-            footer = tagList(
-                modalButton("Cancelar"),
-                actionButton("ModificarRX", "Etiquetar RX")
-            )
-        )
-    }
-
-    # | -- Sirve excel -----
-    observeEvent(input$ModificarRX, {
-        df <- xlsxRX()
-        # Guardar resto
-        resto <- filter(df, folder != input$listaFolders.input)
-        # El editado
-        edit <- data.frame(folder = input$listaFolders.input,
-                           sirveSubj = input$sirveSubj,
-                           rxFile = input$listRX.input,
-                           tagLesion = input$sirveTag, stringsAsFactors = FALSE)
-        df <- bind_rows(resto, edit)
-        # Lo del excel
-        excel <- createWorkbook()
-        addWorksheet(excel, "Sujetos")
-        writeData(excel, "Sujetos", df)
-        saveWorkbook(excel, file.path(wd$chooseFolder, "rx_status.xlsx"), overwrite = TRUE)
-
-        removeModal()
-    })
-
-
-    # | -- Drop Modal ----
-    modalDropRX <- function(){
-        modalDialog(
-            title = "Confirmar excluir sujeto",
-            size = "m",
-            easyClose = TRUE,
-
-            # Mensaje
-            div(span(h3("Va a pasar el sujeto a", strong("NO SIRVE")))),
-
-            footer = tagList(
-                modalButton("Cancelar"),
-                actionButton("dropRX", "RX no sirve")
-            )
-        )
-    }
-
-    # | -- Drop Excel ----
-    observeEvent(input$dropRX, {
-        df <- xlsxRX()
-        # Guardar resto
-        resto <- filter(df, folder != input$listaFolders.input)
-        # El editado
-        edit <- data.frame(folder = input$listaFolders.input,
-                           sirveSubj = input$sirveSubj,
-                           rxFile = "",
-                           tagLesion = "", stringsAsFactors = FALSE)
-        df <- bind_rows(resto, edit)
-        # Lo del excel
-        excel <- createWorkbook()
-        addWorksheet(excel, "Sujetos")
-        writeData(excel, "Sujetos", df)
-        saveWorkbook(excel, file.path(wd$chooseFolder, "rx_status.xlsx"), overwrite = TRUE)
-
-        removeModal()
-    })
-
-
-    # | Sección imagen ---------------------------------------------------------
-    # | -- Mostrar filename ----
-    output$rxFile <- renderPrint({
-        if (wd$chooseFolder == "Ingresar directorio" | is.na(wd$chooseFolder)){
-            cat("Esperando directorio...   :)")
-
-        } else if (length(ch()) == 0){
-            cat("Todo procesado")
-
+            # Widget
         } else {
-            cat(input$listaFolders.input, "|", input$listRX.input)
+            p("No hay sujeto para cargar")
         }
     })
 
-    # | -- Mostar RX ----
+    # | -- Lista de RX ----
+    output$rayos <- renderUI({
+        # Si no hay folder
+        if (nrow(rxdata()) > 1){
+            rx <- filter(rxdata(), rut == req(input$listaRut.input))
+            rx <- filter(rx, refNum == req(input$listaRef.input))
+            rx <- filter(rx, serie == req(input$listaSerie.input))
+            rx <- rx[["rx"]]
+            rx <- unique(rx)
+
+            # Por si no hubieran RX
+            if (length(rx) == 0){
+                HTML("<p>No hay rx</p>")
+            } else {
+                radioButtons("listaRX.input", label = NULL, choices = rx)
+            }
+
+            # Widget
+        } else {
+            p("No hay sujeto para cargar")
+        }
+
+    })
+
+
+    # | -- Imagen RX ----
     output$rxImage <- renderImage({
-        validate(need(input$listRX.input, "Esperando input!"))
-        rxfile <- file.path(wd$chooseFolder, input$listaFolders.input, input$listRX.input)
-        list(src = rxfile)
+        # Terminar de filtrar
+        datos <- req(rxdata())
+        rut <- filter(datos, rut == req(input$listaRut.input))
+        ref <- filter(rut, refNum == req(input$listaRef.input))
+        serie <- filter(ref, serie == req(input$listaSerie.input))
+        img <- filter(serie, rx == req(input$listaRX.input))
+
+        # Cargar la imágen
+        img <- img$file
+        rxfile <- list(src = file.path(rxdir(), req(img)))
+        rxfile
+
     }, deleteFile = FALSE)
 
 
+    # | -- Boton Filtrar Rut ----------
+    # Modeal de confirmacion
+    modal_filterRUT <- function(){
+        msg <- paste("Va a descartar el rut", input$listaRut.input, "y todas sus imágenes")
+        modalDialog(
+            title = "Confirmar descargar RUT",
+            size = "m",
+            easyClose = TRUE,
+            div(span(msg)),
+            footer = tagList(
+                modalButton("No, me arrepentí"),
+                actionButton("dropRut", "Chao Rut")
+            )
+        )
+    }
 
-    # | ----
-    # | PANEL 3: Tabla listos -------------------------------------------------
-    output$rxlistos <- renderTable({
-        xlsxRX()
-    }, striped = TRUE, spacing = "m", )
+    # Mostar el modal
+    observeEvent(input$chaoRUT, {
+        showModal(modal_filterRUT())
+    })
 
-    # output$test <- renderPrint({
-    #     # paste(ch(), "----", wd$chooseFolder)
-    # })
+    # Acciones de aceptar
+    observeEvent(input$dropRut, {
+        rut <- input$listaRut.input
+
+        datos <- rxdata()
+        datos[datos$rut == rut, "etiqueta"] <- "Drop Rut"
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
+
+
+
+    # | -- Boton filtrar referencia --------
+    modal_filterRef <- function(){
+        msg <- paste("Va a descartar la Referencia Num:", input$listaRef.input, "y todas sus imágenes")
+        modalDialog(
+            title = "Confirmar descargar Referencia",
+            size = "m",
+            easyClose = TRUE,
+            div(span(msg)),
+            footer = tagList(
+                modalButton("No, me arrepentí"),
+                actionButton("dropRef", "Chao Referencia")
+            )
+        )
+    }
+
+    # Mostar el modal
+    observeEvent(input$chaoREF, {
+        showModal(modal_filterRef())
+    })
+
+    # Acciones de aceptar
+    observeEvent(input$dropRef, {
+        rut <- input$listaRut.input
+        ref <- input$listaRef.input
+
+        datos <- rxdata()
+        datos[datos$rut == rut & datos$refNum == ref, "etiqueta"] <- "Drop Referencia"
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
+
+
+    # | -- Boton filtrar serie ----------
+    modal_filterSerie <- function(){
+        msg <- paste("Va a descartar la Serie:", input$listaSerie.input, "y todas sus imágenes")
+        modalDialog(
+            title = "Confirmar descartar serie",
+            size = "m",
+            easyClose = TRUE,
+            div(span(msg)),
+            footer = tagList(
+                modalButton("No, me arrepentí"),
+                actionButton("dropSerie", "Chao Serie")
+            )
+        )
+    }
+
+    # Mostar el modal serie
+    observeEvent(input$chaoSERIE, {
+        showModal(modal_filterSerie())
+    })
+
+    # Acciones de aceptar serie
+    observeEvent(input$dropSerie, {
+        rut <- input$listaRut.input
+        ref <- input$listaRef.input
+        serie <- input$listaSerie.input
+
+        datos <- rxdata()
+        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie, "etiqueta"] <- "Drop Serie"
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
+
+
+    # | -- Boton Seleccionar RX -------
+    modal_labelRX <- function(){
+        msg <- paste("Va a etiquetar un RX:", input$listaRX.input, "y todas <br> sus imágenes")
+        modalDialog(
+            title = "Confirmar etiquetado de RX",
+            size = "m",
+            easyClose = TRUE,
+            div(h4("Etiquetar un RX"),
+                p("Rut: ", strong(input$listaRut.input)),
+                p("Referencia: ", strong(input$listaRef.input)),
+                p("Serie: ", strong(input$listaSerie.input)),
+                p("Imagen: ", strong(input$listaRX.input)),
+                h4("Etiqueta: ", strong(input$sirveRX))
+            ),
+            footer = tagList(
+                modalButton("No, me arrepentí"),
+                actionButton("etiquet", "Etiqueta RX")
+            )
+        )
+    }
+    # Mostrar RX
+    observeEvent(input$chooseRX, {
+        if (input$sirveRX == "Elegir"){
+            showNotification("Debe elegir una etiqueta", closeButton = FALSE, type = "error")
+        } else {
+            showModal(modal_labelRX())
+        }
+    })
+
+    # Acciones
+    observeEvent(input$etiquet, {
+        # Etiqueta la serie primero
+        rut <- input$listaRut.input
+        ref <- input$listaRef.input
+        serie <- input$listaSerie.input
+        rx <- input$listaRX.input
+
+        datos <- rxdata()
+        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie, "etiqueta"] <- "Drop RX"
+
+        # Ahora etiqueta el RX
+        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie & datos$rx == rx, "etiqueta"] <- input$sirveRX
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
+
+
+
+
+
+
+
 }
+
 
