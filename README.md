@@ -20,7 +20,7 @@ install.packages("devtools")
 library(devtools)
 
 # Instalar la aplicacion
-devtools::install_github("olitroski/RXapp", update = "never")
+devtools::install_github("olitroski/RXapp", force = TRUE)
 ```
 
 Esto debiera instalar la app y varias librerías. Ocasionalmente puede arrojar algún error interno de R como que no pueda reinstalar alguna librería como por ejemplo:
