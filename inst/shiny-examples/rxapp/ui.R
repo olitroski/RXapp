@@ -93,11 +93,23 @@ ui <- navbarPage(
 
                 # | -- RX -------
                 h4("Imagen"),
-                uiOutput("rayos")
+                uiOutput("rayos"),
+                hr(),
+
+                # | -- Botones de filtraje ------
+                h4("Filtrar"),
+                p("Descartar las imágenes que no sirven"),
+                actionButton("chaoRUT", label = "Descartar Rut", width = 180, ),
+                br(), br(),
+                actionButton("chaoREF", label = "Descartar Referencia", width = 180),
+                br(), br(),
+                actionButton("chaoSERIE", label = "Descartar Serie", width = 180)
+
+
             ),
 
             # | Main ----
-            verbatimTextOutput("test", placeholder = TRUE),
+            # verbatimTextOutput("test", placeholder = TRUE),
 
             column(9,
                 fluidRow(
@@ -105,19 +117,19 @@ ui <- navbarPage(
                     column(3,
                         h4("Descartar Sujeto"),
                         p("Descartar todas las imágenes del suejto"),
-                        actionButton("chaoRUT", label = "Filtrar Rut", icon = icon("filter"))
+                        # actionButton("chaoRUT", label = "Filtrar Rut", icon = icon("filter"))
                     ),
                     # Chao Referencia
                     column(3,
                         h4("Descartar Referencia"),
                         p("Descartar todas las series de la referencia"),
-                        actionButton("chaoREF", label = "Filtrar Ref.", icon = icon("filter"))
+                        # actionButton("chaoREF", label = "Filtrar Ref.", icon = icon("filter"))
                     ),
                     # Chao Referencia
                     column(3,
                            h4("Descartar Serie"),
                            p("Descartar todas las imágenes de la serie"),
-                           actionButton("chaoSERIE", label = "Filtrar Serie", icon = icon("filter"))
+                           # actionButton("chaoSERIE", label = "Filtrar Serie", icon = icon("filter"))
                     ),
 
                     # Elegir RX
@@ -132,6 +144,8 @@ ui <- navbarPage(
 
 
                 # | -- La foto -----
+                tags$head(tags$style(type="text/css", "#rxImage img {max-width: 70%; width: 100%; height: auto}")),
+
                 fluidRow(
                     column(12,
                         imageOutput("rxImage")

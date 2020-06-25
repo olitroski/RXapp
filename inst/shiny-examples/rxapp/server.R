@@ -56,8 +56,14 @@ server <- function(input, output, session){
     # Primero ejecutará este
     rx.get <- function(){
         datos <- cargaRDS(rxdir())
-        datos <- arrange(datos, rut, refNum, serie, rx)
-        datos
+
+        # si el path no tiene rx
+        if (nrow(datos) == 1){
+            datos
+        } else {
+            datos <- arrange(datos, rut, refNum, serie, rx)
+            datos
+        }
     }
 
     # Chequea el mtime
@@ -68,7 +74,8 @@ server <- function(input, output, session){
             modificado <- modificado$mtime
             return(modificado)
         } else {
-            cat("No carga el mtime, crea file nuevo\n")
+            # cat("No carga el mtime, crea file nuevo\n")
+            0   # Ahora que es cero no tira de la otra función
         }
     }
 
@@ -78,25 +85,36 @@ server <- function(input, output, session){
 
     # | ---- Fitrado de etiqueta -----
     output$tablaRecuento <- renderUI({
-        lab <- req(rxdata())
-        lab <- unique(lab$"etiqueta")
-        lab <- c(lab, "Todo")
-        radioButtons("filterDir", label = NULL, choices = req(lab), selected = "Todo")
+        if (nrow(rxdata()) == 1){
+            HTML("<p>Nada que mostrar</p>")
+
+        } else {
+            lab <- req(rxdata())
+            lab <- unique(lab$"etiqueta")
+            lab <- c(lab, "Todo")
+            radioButtons("filterDir", label = NULL, choices = req(lab), selected = "Todo")
+        }
     })
 
     # | ---- Tabla de recuentos
     output$tableDir <- renderTable({
-        # si todo
-        tabla <- otable("etiqueta", data = req(rxdata()))
-        tabla <- mutate(tabla, pct = round(pct*100, 1))
-        tabla <- mutate(tabla, pct = paste0(pct, "%"))
-        names(tabla) <- c("Etiqueta", "Conteo", "Porcentaje")
-        tabla
+        if (nrow(rxdata()) == 1){
+            rxdata()
+        } else {
+            # si todo
+            tabla <- otable("etiqueta", data = req(rxdata()))
+            tabla <- mutate(tabla, pct = round(pct*100, 1))
+            tabla <- mutate(tabla, pct = paste0(pct, "%"))
+            names(tabla) <- c("Etiqueta", "Conteo", "Porcentaje")
+            tabla
+        }
     })
 
     # | ---- Data.frame ----
     output$rxTable <- renderTable({
-        if (req(input$filterDir) == "Todo"){
+        if (nrow(rxdata()) == 1){
+            rxdata()
+        } else if (req(input$filterDir) == "Todo"){
             req(rxdata())
         } else {
             filter(req(rxdata()), etiqueta == input$filterDir)
@@ -106,17 +124,12 @@ server <- function(input, output, session){
 
     # Mostar N sujetos
     output$nsujeto <- renderText({
-        (length(unique(rxdata()$rut)))
+        if (nrow(rxdata()) == 1){
+            "Nada que mostrar"
+        } else{
+            length(unique(rxdata()$rut))
+        }
     })
-
-
-    # | ---- Resetear Rut ------
-    # output$resetRut <- renderUI({
-    #     rutlist <- req(rxdata())
-    #     rutlist <- unique(rutlist$rut)
-    #     selectInput("fixRut", choices = req(rutlist), width = 200, label = NULL)
-    #
-    # })
 
 
     # | ---- Acciones Resetear -----
@@ -157,6 +170,11 @@ server <- function(input, output, session){
     # })
 
 
+
+
+
+
+
     # | ----
     # | PANEL 2: Seleccion de los RX -------------------------------------------------
     # | -- Lista de RUT -----
@@ -168,7 +186,7 @@ server <- function(input, output, session){
             radioButtons("listaRut.input", label = NULL, choices = req(rut))
         # Widget
         } else {
-            HTML("<p>No hay sujeto para cargar</p>")
+            HTML("<p>Esperando input!</p>")
         }
     })
 
@@ -190,7 +208,7 @@ server <- function(input, output, session){
     output$series <- renderUI({
         # Si no hay folder
         validate(need(input$listaRut.input, "Esperando input!"))
-        validate(need(input$listaRef.input, "Esperando input!"))
+        # validate(need(input$listaRef.input, "Esperando input!"))
 
         if (nrow(rxdata()) > 1){
             serie <- filter(rxdata(), rut == req(input$listaRut.input))
@@ -213,6 +231,8 @@ server <- function(input, output, session){
 
     # | -- Lista de RX ----
     output$rayos <- renderUI({
+        validate(need(input$listaRut.input, "Esperando input!"))
+
         # Si no hay folder
         if (nrow(rxdata()) > 1){
             rx <- filter(rxdata(), rut == req(input$listaRut.input))
@@ -238,18 +258,21 @@ server <- function(input, output, session){
 
     # | -- Imagen RX ----
     output$rxImage <- renderImage({
-        # Terminar de filtrar
-        datos <- req(rxdata())
-        rut <- filter(datos, rut == req(input$listaRut.input))
-        ref <- filter(rut, refNum == req(input$listaRef.input))
-        serie <- filter(ref, serie == req(input$listaSerie.input))
-        img <- filter(serie, rx == req(input$listaRX.input))
+        if (nrow(rxdata()) == 1){
+            validate(need(input$listaRut.input, "Esperando input!"))
+        } else {
+            # Terminar de filtrar
+            datos <- req(rxdata())
+            rut <- filter(datos, rut == req(input$listaRut.input))
+            ref <- filter(rut, refNum == req(input$listaRef.input))
+            serie <- filter(ref, serie == req(input$listaSerie.input))
+            img <- filter(serie, rx == req(input$listaRX.input))
 
-        # Cargar la imágen
-        img <- img$file
-        rxfile <- list(src = file.path(rxdir(), req(img)))
-        rxfile
-
+            # Cargar la imágen
+            img <- img$file
+            rxfile <- list(src = file.path(rxdir(), req(img)))
+            rxfile
+        }
     }, deleteFile = FALSE)
 
 
