@@ -14,7 +14,7 @@ source("otable.R")
 datosrx <- cargaRDS("D:/OneDrive/BarbiApp/AppShiny/testFolder")
 
 
-# stop()
+stop()
 # Cargar app
 setwd("D:/OneDrive/BarbiApp/AppShiny/RXapp/inst/shiny-examples/rxapp")
 shiny::runApp(display.mode = "normal")

@@ -166,13 +166,12 @@ server <- function(input, output, session){
     })
 
     # <<<<<<<<<<<<< test >>>>>>>>>>>>>>>>>>
-    # output$test <- renderPrint({
-    # })
+    output$test <- renderPrint({
+        paste(input$tipoRX, input$manoRX, input$labelRX, sep = " - ")
 
 
-
-
-
+    })
+    # <<<<<<<<<<<<<<< >>>>>>>>>>>>>>>>>>>>>
 
 
     # | ----
@@ -374,30 +373,36 @@ server <- function(input, output, session){
     })
 
 
-    # | -- Boton Seleccionar RX -------
+    # | -- Boton Confirmar RX -------------------------------------------------------------------
     modal_labelRX <- function(){
         msg <- paste("Va a etiquetar un RX:", input$listaRX.input, "y todas <br> sus imágenes")
         modalDialog(
             title = "Confirmar etiquetado de RX",
             size = "m",
             easyClose = TRUE,
-            div(h4("Etiquetar un RX"),
-                p("Rut: ", strong(input$listaRut.input)),
-                p("Referencia: ", strong(input$listaRef.input)),
-                p("Serie: ", strong(input$listaSerie.input)),
-                p("Imagen: ", strong(input$listaRX.input)),
-                h4("Etiqueta: ", strong(input$sirveRX))
+
+            div(h4("Antecedentes del RX"),
+                p("Rut: ", strong(input$listaRut.input),
+                  " | Referencia: ", strong(input$listaRef.input),
+                  " | Serie: ", strong(input$listaSerie.input),
+                  " | Imagen: ", strong(input$listaRX.input)),
             ),
+            hr(),
+            div(h4("Etiquetas seleccionadas"),
+                tags$ul(tags$li(input$tipoRX), tags$li(input$manoRX), tags$li(input$labelRX))
+            ),
+
             footer = tagList(
                 modalButton("No, me arrepentí"),
                 actionButton("etiquet", "Etiqueta RX")
             )
         )
     }
+
     # Mostrar RX
     observeEvent(input$chooseRX, {
-        if (input$sirveRX == "Elegir"){
-            showNotification("Debe elegir una etiqueta", closeButton = FALSE, type = "error")
+        if (is.null(input$tipoRX) & is.null(input$manoRX) & is.null(input$labelRX)){
+            showNotification("Debe elegir las etiqueta", closeButton = FALSE, type = "error")
         } else {
             showModal(modal_labelRX())
         }
@@ -412,18 +417,64 @@ server <- function(input, output, session){
         rx <- input$listaRX.input
 
         datos <- rxdata()
-        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie, "etiqueta"] <- "Drop RX"
+        datos[datos$rut == rut &
+              datos$refNum == ref &
+              datos$serie == serie &
+              datos$rx == rx, "etiqueta"] <- paste(input$tipoRX, input$manoRX, input$labelRX, sep = " - ")
 
         # Ahora etiqueta el RX
-        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie & datos$rx == rx, "etiqueta"] <- input$sirveRX
         saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
         removeModal()
     })
 
 
+    # | -- Terminar RUT ---------------------------------------------------------------------------
+    # Diseño del modal terminar sujeto
+    modal_finRUT <- function(){
+        msg <- paste("Finalizar:", input$listaRX.input)
+        modalDialog(
+            title = "Confirmar terminar sujeto",
+            size = "m",
+            easyClose = TRUE,
 
+            div(h4("Terminar análisis del sujeto"),
+                p("Rut: ", strong(input$listaRut.input),
+                  " todas las imágenes no etiquetadas serán descargadas")
+            ),
 
+            footer = tagList(
+                modalButton("No, me arrepentí"),
+                actionButton("terminar", "Finalizar RUT")
+            )
+        )
+    }
 
+    # Mostrar modal terminar sujeto
+    observeEvent(input$terminarRX, {
+        if (is.null(input$tipoRX) & is.null(input$manoRX) & is.null(input$labelRX)){
+            showNotification("Debe elegir las etiqueta", closeButton = FALSE, type = "error")
+        } else {
+            showModal(modal_finRUT())
+        }
+    })
+
+    # Acciones para terminar sujeto
+    observeEvent(input$terminar, {
+        # Antecedentes
+        rut <- input$listaRut.input
+        ref <- input$listaRef.input
+        serie <- input$listaSerie.input
+        rx <- input$listaRX.input
+
+        # Hacer los cambios
+        datos <- rxdata()
+        datos[datos$rut == rut &
+              datos$etiqueta == "No procesado", "etiqueta"] <- "RX Descartado"
+
+        # Guardar
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
 
 
 }

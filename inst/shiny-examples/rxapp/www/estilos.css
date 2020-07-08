@@ -1,0 +1,61 @@
+.buscar-path {
+	/*border: 1px solid black;*/
+	/*padding-top: 5px;*/
+
+	margin-right: 0px;
+	margin-left: 0px;
+	width: 70%;
+
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	align-items: baseline;
+}
+
+#pathText {
+	margin-right: 10px;
+	width: 80%
+}
+
+#pathBoton {
+	width: 20%;
+}
+
+/*La tabla de archivos y sus filtro*/
+.row.tabla-filtros {
+	margin-right: 0px;
+	margin-left: 0px;
+
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+	justify-content: space-around;
+}
+
+#rxImage > img {
+	max-width: 90%;
+}
+
+/*
+img:hover{
+	-webkit-transform: scale(2,2);
+}
+*/
+
+/*Lista de elecciones */
+#elegir-rx {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	align-items: center;
+	
+}
+
+#terminarRX{
+	background-color: rgb(74, 95, 186);
+	color: white;
+	font-size: 20px;
+
+}

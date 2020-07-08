@@ -3,6 +3,9 @@ ui <- navbarPage(
 
     # | Tab: Seleccionar archivos -----------------------------------------
     tabPanel("Select Folder",
+        # CSS
+        tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "estilos.css")),
+
         # | --- Encabezado y botón ----
         fluidRow(
             column(12,
@@ -14,26 +17,29 @@ ui <- navbarPage(
             )
         ),
 
-        fluidRow(
-            column(7,
+        fluidRow(class = "buscar-path",
+            # column(7,
                    # Muestra ruta
                    verbatimTextOutput("pathText", placeholder = TRUE),
-            ),
-            column(5,
+            # ),
+            # column(5,
                    # Carga ruta
                    actionButton("pathBoton", "Buscar...", icon = icon("folder"), width = "110px")
-            )
+            # )
         ),
         hr(),
 
         # verbatimTextOutput("test", placeholder = TRUE),
 
         # | --- Mostrar el data.frame con opciones de filtrado ------
-        fluidRow(
-            column(7, offset = 1,
+        fluidRow(class = "tabla-filtros",
+            div(
+            # column(7, offset = 1,
                 tableOutput("rxTable")
+            # ),
             ),
-            column(4,
+            div(
+            # column(4,
                 # Seleccion de filtro
                 h4("Filtrar según Status"),
                 uiOutput("tablaRecuento"),
@@ -54,6 +60,7 @@ ui <- navbarPage(
                 textInput("textrut", label = NULL, width = 200, placeholder = "Rut sin espacios"),
                 # uiOutput("resetRut"),
                 actionButton("resetButton", label ="Reset Rut", icon = icon("warning"))
+            # )
             )
         )
 
@@ -104,53 +111,55 @@ ui <- navbarPage(
                 actionButton("chaoREF", label = "Descartar Referencia", width = 180),
                 br(), br(),
                 actionButton("chaoSERIE", label = "Descartar Serie", width = 180)
-
-
             ),
 
             # | Main ----
+            # Testeo de cosas
             # verbatimTextOutput("test", placeholder = TRUE),
 
-            column(9,
+            # | -- La foto ------------------------------------------------------------------------
+            column(7,
+                imageOutput("rxImage")
+            ),
+
+            # | -- Columna de etiquetados ---------------------------------------------------------
+            column(2,
+                # Encabezado
                 fluidRow(
-                    # Chao sujeto
-                    column(3,
-                        h4("Descartar Sujeto"),
-                        p("Descartar todas las imágenes del suejto"),
-                        # actionButton("chaoRUT", label = "Filtrar Rut", icon = icon("filter"))
-                    ),
-                    # Chao Referencia
-                    column(3,
-                        h4("Descartar Referencia"),
-                        p("Descartar todas las series de la referencia"),
-                        # actionButton("chaoREF", label = "Filtrar Ref.", icon = icon("filter"))
-                    ),
-                    # Chao Referencia
-                    column(3,
-                           h4("Descartar Serie"),
-                           p("Descartar todas las imágenes de la serie"),
-                           # actionButton("chaoSERIE", label = "Filtrar Serie", icon = icon("filter"))
+                    h4("Elegir RX del sujeto"),
+                    p("Seleccionar RX para estudio marcando tipo imagen y etiqueta correspondiente"),
+                    hr(),
+
+                    # Tipo RX
+                    div(style = "padding-bottom:10px;",
+                        radioButtons("tipoRX", label = "Seleccionar tipo de RX", choices = c("Antero-Posterior", "Lateral"),
+                                     inline = TRUE, selected = character(0))
                     ),
 
-                    # Elegir RX
-                    column(3,
-                        h4("The Choosen One"),
-                        p("El RX elegido será incluido en el estudio"),
-                        radioButtons("sirveRX", label = NULL, choices = c("Estable", "Inestable", "Elegir"), inline = TRUE, selected = "Elegir"),
+                    # Mano
+                    div(style = "padding-bottom:10px;",
+                        radioButtons("manoRX", label = "Identificar mano RX", choices = c("Izquierda", "Derecha"),
+                                     inline = TRUE, selected = character(0))
+                    ),
+
+                    # Etiqueta
+                    div(style = "",
+                        radioButtons("labelRX", label = "Etiqueta fractura", choices = c("Estable", "Inestable"),
+                                     inline = TRUE, selected = character(0))
+                    ),
+                    hr(),
+
+                    # Compilar espuestas
+                    div(style = "padding-bottom:30px;",
                         actionButton("chooseRX", label = "Confirmar", icon = icon("check"))
-                    )
+                    ),
+
+                    # Terminar sujeto
+                    div(style = "",
+                        actionButton("terminarRX", label = "Terminar Sujeto")
+                    ),
+                    hr(),
                 ),
-                hr(),
-
-
-                # | -- La foto -----
-                tags$head(tags$style(type="text/css", "#rxImage img {max-width: 70%; width: 100%; height: auto}")),
-
-                fluidRow(
-                    column(12,
-                        imageOutput("rxImage")
-                    )
-                )
             )
         )
     )
