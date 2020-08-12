@@ -3,10 +3,10 @@
 #' @return App
 #' @export
 #' @examples
-#' # RXapp()
+#' # barbiApp()
 #' @import shiny
 
-RXapp <- function(){
+barbiApp <- function(){
     appDir <- system.file("shiny-examples", "rxapp", package = "RXapp")
 
     # Por si no hubiera nada

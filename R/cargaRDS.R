@@ -72,7 +72,7 @@ cargaRDS <- function(rxdir){
                     temp <- select(temp, rut, refNum, serie, rx)
 
                     # Agregar variables
-                    temp <- mutate(temp, rxDoble = 0, etiqueta = "No procesado")
+                    temp <- mutate(temp, etiqueta = "No procesado")
                     rxdata <- bind_cols(temp, rxdata)
                     rm(temp)
 
