@@ -5,6 +5,7 @@ server <- function(input, output, session){
     library(dplyr)
     library(shiny)
 
+    options(warn = 2)
 
     # | PANEL 1: Seleccionar carpeta --------------------------------------------
 
@@ -167,9 +168,12 @@ server <- function(input, output, session){
 
     # <<<<<<<<<<<<< test >>>>>>>>>>>>>>>>>>
     output$test <- renderPrint({
-        paste(input$tipoRX, input$manoRX, input$labelRX, sep = " - ")
-
-
+        is.null(input$listaRut.input)
+        # paste(input$listaRut.input,
+        #       input$listaRef.input,
+        #       input$listaSerie.input,
+        #       input$listaRX.input,
+        #       sep = " - ")
     })
     # <<<<<<<<<<<<<<< >>>>>>>>>>>>>>>>>>>>>
 
@@ -178,25 +182,24 @@ server <- function(input, output, session){
     # | PANEL 2: Seleccion de los RX -------------------------------------------------
     # | -- Lista de RUT -----
     output$listaRut <- renderUI({
-        # Si no hay folder
+        validate(need(rxdata(), "Esperando input!"))
         if (nrow(rxdata()) > 1){
             rut <- filter(rxdata(), etiqueta == "No procesado")
             rut <- unique(rut$rut)
-            radioButtons("listaRut.input", label = NULL, choices = req(rut))
-        # Widget
+            radioButtons("listaRut.input", label = NULL, choices = req(rut), selected = rut[1])
+        # Si no hay folder
         } else {
             HTML("<p>Esperando input!</p>")
         }
     })
 
     # | -- Lista de referencias -----
-    output$referencia <- renderUI({
+    output$listaRef <- renderUI({
         validate(need(input$listaRut.input, "Esperando input!"))
-        # Si no hay folder
         if (nrow(rxdata()) > 1){
             reflist <- filter(rxdata(), rut == req(input$listaRut.input), etiqueta == "No procesado")
             reflist <- unique(reflist$refNum)
-            radioButtons("listaRef.input", label = NULL, choices = req(reflist))
+            radioButtons("listaRef.input", label = NULL, choices = req(reflist), selected = reflist[1])
         # Widget
         } else {
             HTML("<p>No hay referencias para cargar</p>")
@@ -204,10 +207,8 @@ server <- function(input, output, session){
     })
 
     # | -- Lista de series -------
-    output$series <- renderUI({
-        # Si no hay folder
-        validate(need(input$listaRut.input, "Esperando input!"))
-        # validate(need(input$listaRef.input, "Esperando input!"))
+    output$listaSerie <- renderUI({
+        validate(need(input$listaRef.input, "Esperando input!"))
 
         if (nrow(rxdata()) > 1){
             serie <- filter(rxdata(), rut == req(input$listaRut.input))
@@ -218,7 +219,6 @@ server <- function(input, output, session){
             if (length(serie) == 0){
                 HTML("<p>No hay series para cargar</p>")
             } else {
-                # radioButtons("listaSerie.input", label = NULL, choices = c("Todo", serie), selected = "Todo")
                 radioButtons("listaSerie.input", label = NULL, choices = req(serie))
             }
 
@@ -229,8 +229,8 @@ server <- function(input, output, session){
     })
 
     # | -- Lista de RX ----
-    output$rayos <- renderUI({
-        validate(need(input$listaRut.input, "Esperando input!"))
+    output$listaRX <- renderUI({
+        validate(need(input$listaSerie.input, "Esperando input!"))
 
         # Si no hay folder
         if (nrow(rxdata()) > 1){
@@ -257,35 +257,39 @@ server <- function(input, output, session){
 
     # | -- Imagen RX ----
     output$rxImage <- renderImage({
-        if (nrow(rxdata()) == 1){
-            validate(need(input$listaRut.input, "Esperando input!"))
-        } else {
-            # Terminar de filtrar
-            datos <- req(rxdata())
-            rut <- filter(datos, rut == req(input$listaRut.input))
-            ref <- filter(rut, refNum == req(input$listaRef.input))
-            serie <- filter(ref, serie == req(input$listaSerie.input))
-            img <- filter(serie, rx == req(input$listaRX.input))
+        validate(need(rxdata(), "Esperando input!"))
+        validate(need(input$listaRut.input, "Esperando input!"))
+        validate(need(input$listaRef.input, "Esperando input!"))
+        validate(need(input$listaSerie.input, "Esperando input!"))
+        validate(need(input$listaRX.input, "Esperando input!"))
 
-            # Cargar la imágen
-            img <- img$file
-            rxfile <- list(src = file.path(rxdir(), req(img)))
-            rxfile
-        }
+        # Terminar de filtrar
+        img <- dplyr::filter(req(rxdata()),
+                             rut == req(input$listaRut.input),
+                             refNum == req(input$listaRef.input),
+                             serie == req(input$listaSerie.input),
+                             rx == req(input$listaRX.input)
+        )
+
+        # Cargar la imagen
+        img <- img$file
+        rxfile <- list(src = file.path(rxdir(), req(img)))
+        rxfile
+
     }, deleteFile = FALSE)
 
 
     # | -- Boton Filtrar Rut ----------
     # Modeal de confirmacion
     modal_filterRUT <- function(){
-        msg <- paste("Va a descartar el rut", input$listaRut.input, "y todas sus imágenes")
+        msg <- paste("Va a descartar el rut", input$listaRut.input, "y todas sus RX")
         modalDialog(
             title = "Confirmar descargar RUT",
             size = "m",
             easyClose = TRUE,
             div(span(msg)),
             footer = tagList(
-                modalButton("No, me arrepentí"),
+                modalButton("No, me arrepenti"),
                 actionButton("dropRut", "Chao Rut")
             )
         )
@@ -301,7 +305,7 @@ server <- function(input, output, session){
         rut <- input$listaRut.input
 
         datos <- rxdata()
-        datos[datos$rut == rut, "etiqueta"] <- "Drop Rut"
+        datos[datos$rut == rut, "etiqueta"] <- "Removido: Rut"
         saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
         removeModal()
     })
@@ -310,14 +314,14 @@ server <- function(input, output, session){
 
     # | -- Boton filtrar referencia --------
     modal_filterRef <- function(){
-        msg <- paste("Va a descartar la Referencia Num:", input$listaRef.input, "y todas sus imágenes")
+        msg <- paste("Va a descartar la Referencia Num:", input$listaRef.input, "y todas sus RX")
         modalDialog(
             title = "Confirmar descargar Referencia",
             size = "m",
             easyClose = TRUE,
             div(span(msg)),
             footer = tagList(
-                modalButton("No, me arrepentí"),
+                modalButton("No, me arrepenti"),
                 actionButton("dropRef", "Chao Referencia")
             )
         )
@@ -334,7 +338,7 @@ server <- function(input, output, session){
         ref <- input$listaRef.input
 
         datos <- rxdata()
-        datos[datos$rut == rut & datos$refNum == ref, "etiqueta"] <- "Drop Referencia"
+        datos[datos$rut == rut & datos$refNum == ref, "etiqueta"] <- "Removido: Referencia"
         saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
         removeModal()
     })
@@ -342,14 +346,14 @@ server <- function(input, output, session){
 
     # | -- Boton filtrar serie ----------
     modal_filterSerie <- function(){
-        msg <- paste("Va a descartar la Serie:", input$listaSerie.input, "y todas sus imágenes")
+        msg <- paste("Va a descartar la Serie:", input$listaSerie.input, "y todas sus RX")
         modalDialog(
             title = "Confirmar descartar serie",
             size = "m",
             easyClose = TRUE,
             div(span(msg)),
             footer = tagList(
-                modalButton("No, me arrepentí"),
+                modalButton("No, me arrepenti"),
                 actionButton("dropSerie", "Chao Serie")
             )
         )
@@ -362,15 +366,52 @@ server <- function(input, output, session){
 
     # Acciones de aceptar serie
     observeEvent(input$dropSerie, {
+        # browser()
         rut <- input$listaRut.input
         ref <- input$listaRef.input
         serie <- input$listaSerie.input
 
         datos <- rxdata()
-        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie, "etiqueta"] <- "Drop Serie"
+        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie, "etiqueta"] <- "Removido: Serie"
         saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
         removeModal()
     })
+
+
+    # | -- Boton filtrar RX -------------
+    modal_filterRX <- function(){
+        msg <- paste("Va a descartar el RX:", input$listaSerie.input)
+        modalDialog(
+            title = "Confirmar descartar RX",
+            size = "m",
+            easyClose = TRUE,
+            div(span(msg)),
+            footer = tagList(
+                modalButton("No, me arrepenti"),
+                actionButton("dropRX", "Chao RX")
+            )
+        )
+    }
+
+    # Mostar el modal RX
+    observeEvent(input$chaoRX, {
+        showModal(modal_filterRX())
+    })
+
+    # Acciones de aceptar RX
+    observeEvent(input$dropRX, {
+        rut <- input$listaRut.input
+        ref <- input$listaRef.input
+        serie <- input$listaSerie.input
+        img <- input$listaRX.input
+
+        datos <- rxdata()
+        datos[datos$rut == rut & datos$refNum == ref & datos$serie == serie & datos$rx == img, "etiqueta"] <- "Removido: RX"
+        saveRDS(datos, file.path(rxdir(), "rxData.RDS"))
+        removeModal()
+    })
+
+
 
 
     # | -- Boton Confirmar RX -------------------------------------------------------------------
@@ -393,7 +434,7 @@ server <- function(input, output, session){
             ),
 
             footer = tagList(
-                modalButton("No, me arrepentí"),
+                modalButton("No, me arrepenti"),
                 actionButton("etiquet", "Etiqueta RX")
             )
         )
@@ -429,7 +470,7 @@ server <- function(input, output, session){
 
 
     # | -- Terminar RUT ---------------------------------------------------------------------------
-    # Diseño del modal terminar sujeto
+    # Diseno del modal terminar sujeto
     modal_finRUT <- function(){
         msg <- paste("Finalizar:", input$listaRX.input)
         modalDialog(
@@ -437,13 +478,13 @@ server <- function(input, output, session){
             size = "m",
             easyClose = TRUE,
 
-            div(h4("Terminar análisis del sujeto"),
+            div(h4("Terminar analisis del sujeto"),
                 p("Rut: ", strong(input$listaRut.input),
                   " todas las imágenes no etiquetadas serán descargadas")
             ),
 
             footer = tagList(
-                modalButton("No, me arrepentí"),
+                modalButton("No, me arrepenti"),
                 actionButton("terminar", "Finalizar RUT")
             )
         )

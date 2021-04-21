@@ -62,7 +62,7 @@ cargaRDS <- function(rxdir){
 
                     # Separar
                     temp <- str_split(rxdata[["file"]], "_", simplify = TRUE)
-                    temp <- as.data.frame(temp)
+                    temp <- as.data.frame(temp, stringsAsFactors = FALSE)
                     names(temp) <- c("rut", "refNum", "serieName", "serieNum", "rx")
 
                     # Arreglar algunas cosas antes
@@ -72,8 +72,8 @@ cargaRDS <- function(rxdir){
                     temp <- select(temp, rut, refNum, serie, rx)
 
                     # Agregar variables
-                    temp <- mutate(temp, etiqueta = "No procesado")
                     rxdata <- bind_cols(temp, rxdata)
+                    rxdata <- mutate(rxdata, etiqueta = "No procesado")
                     rm(temp)
 
                     # Guardamos

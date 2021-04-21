@@ -10,7 +10,7 @@ Description: Etiqueta RX files segun diagnostico para estudio de AI.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Imports: 
     openxlsx,
     stringr,

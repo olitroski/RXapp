@@ -41,7 +41,7 @@ ui <- navbarPage(
             div(
             # column(4,
                 # Seleccion de filtro
-                h4("Filtrar según Status"),
+                h4("Filtrar segun Status"),
                 uiOutput("tablaRecuento"),
                 br(),
 
@@ -71,13 +71,12 @@ ui <- navbarPage(
     # | ----
     # | Tab: App  --------------------------------------------------
     tabPanel("Etiquetar RX",
-        # Pagina única no más
         fluidRow(
             # | Sidebar ----
             column(1,
                 # | -- Sujetos a editar ----
                 h4("Rut"),
-                p("No analizados"),
+                p("Para analizar"),
                 # hr(),
                 # div(style = "overflow-y: scroll; height: 450px",
                 #     uiOutput("listaRut")
@@ -89,28 +88,30 @@ ui <- navbarPage(
                 # | -- Referencia -----
                 h4("Referencia"),
                 # p("Set de RX de una fecha y hora determinada"),
-                uiOutput("referencia"),
+                uiOutput("listaRef"),
                 hr(),
 
                 # | -- Serie -----
                 h4("Serie"),
-                # p("Agrupación de RX"),
-                uiOutput("series"),
+                # p("Agrupacion de RX"),
+                uiOutput("listaSerie"),
                 hr(),
 
                 # | -- RX -------
                 h4("Imagen"),
-                uiOutput("rayos"),
+                uiOutput("listaRX"),
                 hr(),
 
                 # | -- Botones de filtraje ------
                 h4("Filtrar"),
-                p("Descartar las imágenes que no sirven"),
-                actionButton("chaoRUT", label = "Descartar Rut", width = 180, ),
+                p("Descartar las imagenes que no sirven"),
+                actionButton("chaoRUT", label = "Remover Rut", width = 180, ),
                 br(), br(),
-                actionButton("chaoREF", label = "Descartar Referencia", width = 180),
+                actionButton("chaoREF", label = "Remover Referencia", width = 180),
                 br(), br(),
-                actionButton("chaoSERIE", label = "Descartar Serie", width = 180)
+                actionButton("chaoSERIE", label = "Remover Serie", width = 180),
+                br(), br(),
+                actionButton("chaoRX", label = "Remover RX", width = 180)
             ),
 
             # | Main ----
