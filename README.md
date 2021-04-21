@@ -39,7 +39,7 @@ Para ejecutar es abrir un RStudio y escribir.
 library("RXapp")
 
 # Ejecutar App
-cargarApp()
+barbiApp()
 ```
 
 Con esto debiera abrirse una ventana de RStudio.
@@ -50,7 +50,7 @@ Con esto debiera abrirse una ventana de RStudio.
 
 El directorio de trabajo solo debe tener las imágenes de RX, la app solo carga archivos con estructura estructura de nombre de archivo y para no contaminar la carpeta lo mejor es ni tocarla.
 
-Antes de trabajar en datos reales entrenar con los RX que tiene este archivo ZIP, extraer en alguna carpeta y comenzar a editar.
+Antes de trabajar en datos reales entrenar con los RX que tiene [este archivo ZIP](https://github.com/olitroski/RXapp/raw/master/inst/data/testFolder.zip), extraer en alguna carpeta y comenzar a editar.
 
 ### 2. Etiquetar sujetos
 
