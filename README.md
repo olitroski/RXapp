@@ -10,44 +10,36 @@ Contiene un comando que solo funciona en Windows, por lo cual generará un error
 * [Descargar Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 * [Descargar RStudio Desktop](https://rstudio.com/products/rstudio/download/#download)
 
-## Instalar devtools
+## Instalar pacman
 
-Una vez instalado todo hay que instalar la librería `devtools` y la aplicación. Para eso abrimos RStudio y escribimos.
+Vamos a instalar esta librería con `pacman`, una vez que tengamos todo instalado hay que instalar y cargar la librería. Para eso abrimos RStudio y escribimos.
 
 ```R
-# Devtools
+# Instalar pacman y devtools
+install.packages("pacman")
 install.packages("devtools")
-library(devtools)
 
-# Instalar la aplicacion
-devtools::install_github("olitroski/RXapp", force = TRUE)
+# Y lo cargamos
+library("pacman")
 ```
 
-Esto debiera instalar la app y varias librerías. Ocasionalmente puede arrojar algún error interno de R como que no pueda reinstalar alguna librería como por ejemplo:
-
-```
-Error: Failed to install 'RXapp' from GitHub:
-  (convertido del aviso) cannot remove prior installation of package ‘Rcpp’
-```
-
-En este caso lo que pasa es que no puede actualizar el paquete `Rcpp` y hay que instalarlo manual mediante el comando.
+Ahora a instalar la librería de RX.
 
 ```R
-install.packages("Rcpp")
+# Instalar desde github
+p_install_gh("olitroski/RXapp")
 ```
-
-Habría que hacer lo mismo si se presentan adicionales errores con otras librerías.
 
 ## Ejecutar la App
 
 Para ejecutar es abrir un RStudio y escribir.
 
 ```R
-# Cargar la app y verificar que carga
+# Cargar libreria
 library("RXapp")
 
 # Ejecutar App
-RXapp()
+cargarApp()
 ```
 
 Con esto debiera abrirse una ventana de RStudio.
@@ -56,7 +48,9 @@ Con esto debiera abrirse una ventana de RStudio.
 
 ### 1. Seleccionar un directorio
 
-El directorio de trabajo solo debe tener las imágenes de RX, la app solo carga archivos con este específico estructura de nombre de archivo y para no contaminar la carpeta lo mejor es ni tocarla.
+El directorio de trabajo solo debe tener las imágenes de RX, la app solo carga archivos con estructura estructura de nombre de archivo y para no contaminar la carpeta lo mejor es ni tocarla.
+
+Antes de trabajar en datos reales entrenar con los RX que tiene este archivo ZIP, extraer en alguna carpeta y comenzar a editar.
 
 ### 2. Etiquetar sujetos
 
